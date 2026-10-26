@@ -1295,13 +1295,6 @@ function masuk(usr){
   $('loginMsg').innerHTML=''; $('lp').value='';
   $('whoName').textContent=usr.nama; $('whoRole').textContent=usr.role==='admin'?'Administrator':'Petugas';
   buildNav(); paintSync(); go('home'); pull(); jalankanPintasan();
-  if(DB.set.penuh&&adaLayarPenuh()&&!sedangLayarPenuh()){
-    /* peramban mewajibkan sentuhan pengguna, jadi dipasang pada ketukan pertama */
-    const sekali=()=>{ document.removeEventListener('click',sekali);
-      const el=document.documentElement;
-      try{ if(el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'}); }catch(e){} };
-    document.addEventListener('click',sekali,{once:true});
-  }
 }
 function logout(){
   confirmBox('Keluar dari aplikasi? Data tetap tersimpan, Anda hanya perlu masuk lagi nanti.',async()=>{
@@ -4028,16 +4021,12 @@ async function layarPenuh(){
     if(sedangLayarPenuh()){
       if(document.exitFullscreen) await document.exitFullscreen();
       else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
-      DB.set.penuh=0;
     }else{
       if(el.requestFullscreen) await el.requestFullscreen({navigationUI:'hide'});
       else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
       else return toast('Peramban ini tidak mendukung layar penuh');
-      DB.set.penuh=1;
     }
-    DB.set.ts=now(); save();
   }catch(e){ toast('Layar penuh ditolak peramban'); }
-  if($('modal').innerHTML) statusPasang();
 }
 function statusPasang(){
   const https=location.protocol==='https:';
