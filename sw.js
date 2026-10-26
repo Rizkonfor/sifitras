@@ -1,7 +1,7 @@
 /* SIFITRAS — pekerja latar belakang
    Menyimpan salinan aplikasi di perangkat supaya tetap bisa dibuka tanpa internet. */
 
-const VERSI = 'sifitras-v202610262231';
+const VERSI = 'sifitras-v202610262241';
 const INTI = [
   './',
   './index.html',

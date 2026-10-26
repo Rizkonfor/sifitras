@@ -1296,8 +1296,43 @@ function masuk(usr){
   $('login').classList.add('hide'); $('app').classList.remove('hide');
   $('loginMsg').innerHTML=''; $('lp').value='';
   $('whoName').textContent=usr.nama; $('whoRole').textContent=usr.role==='admin'?'Administrator':'Petugas';
-  buildNav(); paintSync(); go('home'); pull(); jalankanPintasan();
+  RIWAYAT=[]; buildNav(); paintSync(); go('home'); pull(); jalankanPintasan(); jaga();
 }
+/* ---------- TOMBOL KEMBALI (HP) ----------
+   Satu entri "penjaga" di riwayat peramban. Tiap tombol kembali ditekan, yang ditutup
+   lebih dulu: pemindai → jendela → pratinjau cetak → halaman sebelumnya → Beranda.
+   Di Beranda: tekan sekali lagi dalam 2 detik untuk keluar, seperti aplikasi Android umumnya. */
+let RIWAYAT=[], MUNDUR=false, PENJAGA=false, KELUAR_T=0;
+function jaga(){
+  if(!ME||PENJAGA) return;
+  /* Chrome melewati entri riwayat yang dibuat sebelum layar pernah disentuh,
+     jadi penjaga baru dipasang setelah sentuhan pertama */
+  const ua=navigator.userActivation;
+  if(ua&&!ua.hasBeenActive){
+    if(!jaga.tunggu){ jaga.tunggu=1;
+      const f=()=>{ jaga.tunggu=0; jaga(); };
+      document.addEventListener('click',f,{once:true,capture:true});
+      document.addEventListener('keydown',f,{once:true,capture:true}); }
+    return;
+  }
+  try{ history.pushState({sifitras:1},''); PENJAGA=true; }catch(e){}
+}
+function tanganiKembali(){
+  PENJAGA=false;
+  if(!ME) return;
+  clearTimeout(KELUAR_T);
+  if($('pindai').classList.contains('on')) tutupPindai();
+  else if($('modal').innerHTML) closeSheet();
+  else if($('printArea').classList.contains('show')) closePrint();
+  else if(PAGE!=='home'){ const ke=RIWAYAT.pop()||'home'; MUNDUR=true; try{ go(ke); }finally{ MUNDUR=false; } }
+  else {
+    toast('Tekan kembali sekali lagi untuk keluar');
+    KELUAR_T=setTimeout(jaga,2000);
+    return;
+  }
+  jaga();
+}
+window.addEventListener('popstate',tanganiKembali);
 function logout(){
   confirmBox('Keluar dari aplikasi? Data tetap tersimpan, Anda hanya perlu masuk lagi nanti.',async()=>{
     await Store.set(SESKEY,{},false);
@@ -1313,6 +1348,9 @@ function buildNav(){
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{ b.dataset.go==='more'?moreSheet():go(b.dataset.go) });
 }
 function go(id){
+  if(id==='home') RIWAYAT=[];
+  else if(!MUNDUR&&PAGE&&PAGE!==id&&RIWAYAT[RIWAYAT.length-1]!==PAGE){ RIWAYAT.push(PAGE); if(RIWAYAT.length>20) RIWAYAT.shift(); }
+  jaga();
   PAGE=id; const n=NAV.find(x=>x.id===id)||NAV[0];
   $('pgTitle').textContent=n.t; $('pgSub').textContent=n.s;
   document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===id));
@@ -1343,6 +1381,7 @@ function moreSheet(){
 
 /* ---------- SHEET / MODAL ---------- */
 function sheet(title,body,foot){
+  jaga();
   $('modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeSheet()"><div class="sheet">
     <div class="sheet-h"><h3>${title}</h3><button class="x" onclick="closeSheet()">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
@@ -2581,6 +2620,7 @@ function bilahCetak(){
     <button class="btn ghost" onclick="closePrint()">Tutup</button></div>`;
 }
 function openPrint(title,html,after,bangun,halaman){
+  jaga();
   PCTX={title:title,bangun:bangun||null,after:after||null,halaman:halaman||null};
   pasangGayaHalaman(PCTX.halaman);
   const P=$('printArea');
@@ -3744,6 +3784,7 @@ function pdPesan(html,hijau){
 }
 async function bukaPindai(mode,ruang){
   if(!DB.assets.length) return toast('Belum ada barang untuk dipindai');
+  jaga();
   PD.mode=mode||'cari'; PD.ruang=ruang||''; PD.ketemu={}; PD.akhir=''; PD.waktu=0;
   $('pdJudul').textContent = PD.mode==='opname'
     ? 'Opname'+(PD.ruang?' — '+roomName(PD.ruang):' semua ruangan')
