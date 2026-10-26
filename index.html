@@ -1339,8 +1339,6 @@ function moreSheet(){
       <div class="g"><div class="t">Opname ruangan</div><div class="s">Periksa kelengkapan barang dengan memindai</div></div></button>
     <button class="row" onclick="closeSheet();layarPenuh()"><div class="roomdot">${svg('home')}</div>
       <div class="g"><div class="t">Layar penuh</div><div class="s">Sembunyikan bilah paling atas saat mendata</div></div></button>
-    <button class="row" onclick="closeSheet();statusPasang()"><div class="roomdot">${svg('gear')}</div>
-      <div class="g"><div class="t">Status pemasangan</div><div class="s">Periksa kenapa bilah atas masih muncul</div></div></button>
     <button class="row" onclick="closeSheet();openPwd()"><div class="roomdot">${svg('gear')}</div>
       <div class="g"><div class="t">Ganti kata sandi</div><div class="s">Akun ${esc(ME.nama)}</div></div></button>
     <button class="row" onclick="closeSheet();logout()"><div class="roomdot">${svg('door')}</div>
@@ -3171,10 +3169,6 @@ function vSet(){
         <div class="s">Berkas .json berisi semua master, barang, dan pengaturan</div></div></button>
       <button class="row" onclick="restore()"><div class="g"><div class="t">Pulihkan dari cadangan</div>
         <div class="s">Tempel isi berkas cadangan untuk mengembalikan data</div></div></button>
-      <button class="row" onclick="pasangAplikasi()"><div class="g"><div class="t">Pasang di layar utama</div>
-        <div class="s">Buka seperti aplikasi biasa, tanpa bilah peramban</div></div></button>
-      <button class="row" onclick="statusPasang()"><div class="g"><div class="t">Status pemasangan</div>
-        <div class="s">Periksa kenapa bilah alamat masih muncul di atas</div></div></button>
       <button class="row" onclick="riwayatSheet()"><div class="g"><div class="t">Riwayat perubahan</div>
         <div class="s">Catatan siapa menambah, mengubah, dan menghapus barang</div></div></button>
       <button class="row" onclick="imporSheet()"><div class="g"><div class="t">Impor berkas pendataan</div>
