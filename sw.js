@@ -1,7 +1,7 @@
 /* SIFITRAS — pekerja latar belakang
    Menyimpan salinan aplikasi di perangkat supaya tetap bisa dibuka tanpa internet. */
 
-const VERSI = 'sifitras-v202610262227';
+const VERSI = 'sifitras-v202610262231';
 const INTI = [
   './',
   './index.html',
@@ -58,9 +58,11 @@ self.addEventListener('fetch', e => {
   if (req.mode === 'navigate') {
     e.respondWith((async () => {
       try {
-        const r = await fetch(req);
+        /* no-cache: selalu tanya server dulu, supaya versi baru langsung terpakai
+           (GitHub Pages menyimpan halaman di tembolok sampai 10 menit) */
+        const r = await fetch(req, { cache: 'no-cache' });
         const c = await caches.open(VERSI);
-        c.put('./index.html', r.clone());
+        if (r && r.ok) c.put('./index.html', r.clone());
         return r;
       } catch (err) {
         const c = await caches.open(VERSI);

@@ -1216,6 +1216,8 @@ async function boot(){
   if(!Array.isArray(DB.log)) DB.log=[];
   if(!Array.isArray(DB.kegiatan)) DB.kegiatan=[];
   bekukanSemua();
+  /* pilihan layar penuh lama ikut tersinkron ke semua HP dan membuat layar tiba-tiba penuh — dihapus */
+  if(!MUAT_GAGAL&&DB.set.penuh){ DB.set.penuh=0; DB.set.ts=now(); setTimeout(()=>{ try{ save(); }catch(e){} },1500); }
   const dc=seed().set.cetak;
   DB.set.cetak=Object.assign({},dc,DB.set.cetak||{});
   DB.set.cetak.kol=Object.assign({},dc.kol,(DB.set.cetak||{}).kol||{});
