@@ -459,6 +459,7 @@ button.stat.accent:hover{background:var(--ink2)}
 .psign .nip{font-size:10px}
 .ptitle{text-align:center;margin:14px 0 4px;font-size:14px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
 .psub{text-align:center;font-size:11.5px;color:#4A5570;margin-bottom:12px}
+.pcat{font-size:10.5px;line-height:1.5;margin:9px 0 0;color:#1E2537}
 .ptable{width:100%;border-collapse:collapse;font-size:9.6px}
 .ptable th,.ptable td{border:0.3mm solid #A9B2C8;padding:3px 5px;text-align:left;vertical-align:top}
 .ptable td{font-variant-numeric:tabular-nums}
@@ -997,7 +998,11 @@ function seed(){
                     {atas:'Mengetahui,', jabatan:'Kepala Sekolah', nama:'', nip:''},
                     {atas:'', jabatan:'Petugas Sarana dan Prasarana', nama:'', nip:''}
                   ],
-                  kol:{no:1,kode:1,nama:1,jenis:1,jml:1,b:1,rr:1,rb:1,thn:1,dana:1,nilai:1,ket:0} },
+                  kol:{no:1,kode:1,nama:1,jenis:1,jml:1,b:1,rr:1,rb:1,thn:1,dana:1,nilai:1,ket:0},
+                  kolR:{no:1,kode:1,nama:1,merk:1,ket:1,kond:1,thn:1,dana:1,harga:1},
+                  judulKIR:'Kartu Inventaris Ruangan', catatan:'',
+                  tampil:{kop:1,judul:1,sub:1,sKode:1,sPj:1,sSiswa:1,meta:1,mUnit:1,mKond:1,mNilai:1,mTgl:1,mJenis:1,mRuang:1,
+                          rkKond:1,rkDana:1,rkKat:1,grup:1,subtotal:1,total:1} },
           lbl:{ w:52,h:32,gx:2.5,gy:2.5,pad:1.8,qr:44,qrPos:'kiri',font:100,garis:'penuh',radius:1.6,mulai:1,
                 kertas:'A4',orientasi:'potret',margin:10,
                 logoPos:'kop',logoH:22,rata:'kiri',
@@ -1214,6 +1219,8 @@ async function boot(){
   const dc=seed().set.cetak;
   DB.set.cetak=Object.assign({},dc,DB.set.cetak||{});
   DB.set.cetak.kol=Object.assign({},dc.kol,(DB.set.cetak||{}).kol||{});
+  DB.set.cetak.kolR=Object.assign({},dc.kolR,DB.set.cetak.kolR||{});
+  DB.set.cetak.tampil=Object.assign({},dc.tampil,DB.set.cetak.tampil||{});
   const C=DB.set.cetak;
   if(!Array.isArray(C.baris)||!C.baris.length){
     /* susun kop dari identitas sekolah yang sudah terisi */
@@ -2610,6 +2617,9 @@ function ccNum(k,v,min,max){
   CC()[k]=Math.max(min,Math.min(max,n)); DB.set.ts=now(); save(); ulangCetak();
 }
 function ccKol(k,v){ CC().kol[k]=v?1:0; DB.set.ts=now(); save(); ulangCetak(); }
+function ccKolR(k,v){ CC().kolR[k]=v?1:0; DB.set.ts=now(); save(); ulangCetak(); }
+function ccTampil(k,v){ TP()[k]=v?1:0; DB.set.ts=now(); save(); ulangCetak(); }
+function ccCatatan(v){ CC().catatan=String(v||'').slice(0,600); DB.set.ts=now(); save(); ulangCetak(); }
 function ccTeks(k,v){ CC()[k]=String(v||'').slice(0,90); DB.set.ts=now(); save(); ulangCetak(); }
 function ccReset(){ DB.set.cetak=JSON.parse(JSON.stringify(seed().set.cetak)); DB.set.ts=now(); save();
   closeSheet(); ulangCetak(); toast('Tampilan cetak dikembalikan'); }
@@ -2770,6 +2780,8 @@ function cetakSheet(){
   const chip=(k,v,t)=>`<button class="chip${c[k]===v?' on':''}" onclick="ccSet('${k}','${v}',this)">${t}</button>`;
   const sw=(k,t)=>`<label class="ckbox"><input type="checkbox" ${c[k]?'checked':''} onchange="ccSet('${k}',this.checked?1:0)"><span>${t}</span></label>`;
   const kol=(k,t)=>`<label class="ckbox"><input type="checkbox" ${c.kol[k]?'checked':''} onchange="ccKol('${k}',this.checked)"><span>${t}</span></label>`;
+  const kr=(k,t)=>`<label class="ckbox"><input type="checkbox" ${c.kolR[k]?'checked':''} onchange="ccKolR('${k}',this.checked)"><span>${t}</span></label>`;
+  const tp=(k,t)=>`<label class="ckbox"><input type="checkbox" ${TP()[k]?'checked':''} onchange="ccTampil('${k}',this.checked)"><span>${t}</span></label>`;
   sheet('Atur tampilan cetak',`
     <div class="list" style="margin-bottom:15px">
       <button class="row" onclick="closeSheet();kopSheet()"><div class="g">
@@ -2797,23 +2809,83 @@ function cetakSheet(){
       <input type="text" id="ckt" value="${esc(c.kota)}" placeholder="Bandung" oninput="ccTeks('kota',this.value)">
       <div class="hint">Muncul sebagai “Bandung, 25 Agustus 2026” di atas tanda tangan.</div></div>
 
+    <div class="field"><label for="cjk">Judul KIR</label>
+      <input type="text" id="cjk" value="${esc(c.judulKIR||'')}" placeholder="Kartu Inventaris Ruangan" oninput="ccTeks('judulKIR',this.value)"></div>
+
     <div class="eyebrow" style="margin-bottom:9px">Bagian yang tampil</div>
     <div class="ckgrid" style="margin-bottom:15px">
-      ${sw('ringkasan','Kotak ringkasan')}${sw('ttd','Blok tanda tangan')}${sw('zebra','Baris berselang-seling')}
+      ${tp('kop','Kop surat')}${tp('judul','Judul')}${tp('sub','Keterangan di bawah judul')}${tp('meta','Baris info')}
+      ${sw('ringkasan','Kotak ringkasan (rekap)')}${tp('grup','Judul tiap ruangan (rekap)')}${tp('subtotal','Jumlah tiap ruangan (rekap)')}
+      ${tp('total','Baris jumlah / total')}${sw('ttd','Blok tanda tangan')}${sw('zebra','Baris berselang-seling')}
     </div>
 
-    <div class="eyebrow" style="margin-bottom:9px">Kolom tabel</div>
+    <div class="eyebrow" style="margin-bottom:9px">Isi keterangan di bawah judul (KIR)</div>
+    <div class="ckgrid" style="margin-bottom:15px">
+      ${tp('sKode','Kode ruang')}${tp('sPj','Penanggung jawab')}${tp('sSiswa','Jumlah siswa')}
+    </div>
+
+    <div class="eyebrow" style="margin-bottom:9px">Isi baris info</div>
+    <div class="ckgrid" style="margin-bottom:15px">
+      ${tp('mUnit','Jumlah unit')}${tp('mKond','Baik / rusak (KIR)')}${tp('mNilai','Nilai')}${tp('mTgl','Tanggal cetak (KIR)')}
+      ${tp('mJenis','Jenis barang (rekap)')}${tp('mRuang','Ruangan terisi (rekap)')}
+    </div>
+
+    <div class="eyebrow" style="margin-bottom:9px">Isi kotak ringkasan (rekap)</div>
+    <div class="ckgrid" style="margin-bottom:15px">
+      ${tp('rkKond','Kondisi barang')}${tp('rkDana','Sumber dana')}${tp('rkKat','Kategori')}
+    </div>
+
+    <div class="eyebrow" style="margin-bottom:9px">Kolom tabel ringkas</div>
     <div class="ckgrid">
       ${kol('no','No')}${kol('kode','Kode barang')}${kol('nama','Nama barang')}${kol('jenis','Kode jenis')}
       ${kol('jml','Jumlah')}${kol('b','Baik')}${kol('rr','Rusak ringan')}${kol('rb','Rusak berat')}
       ${kol('thn','Tahun')}${kol('dana','Sumber dana')}${kol('nilai','Nilai')}${kol('ket','Keterangan')}
     </div>
+
+    <div class="eyebrow" style="margin:15px 0 9px">Kolom tabel rinci (per unit)</div>
+    <div class="ckgrid">
+      ${kr('no','No')}${kr('kode','Kode barang')}${kr('nama','Nama barang')}${kr('merk','Merk')}
+      ${kr('ket','Keterangan')}${kr('kond','Kondisi')}${kr('thn','Perolehan')}${kr('dana','Sumber dana')}${kr('harga','Harga')}
+    </div>
+
+    <div class="field" style="margin-top:15px"><label for="cct">Catatan di bawah tabel</label>
+      <textarea id="cct" rows="3" placeholder="Kosongkan bila tidak perlu" oninput="ccCatatan(this.value)">${esc(c.catatan||'')}</textarea></div>
     <p class="note" style="margin-top:12px">Lebar kolom menyesuaikan sendiri. Kalau tabel terasa sesak, matikan kolom yang tidak dipakai atau pilih arah kertas lanskap.</p>`,
     `<button class="btn ghost" onclick="ccReset()">Kembalikan awal</button><button class="btn" onclick="closeSheet()">Selesai</button>`);
 }
 
 /* ---------- CETAK KIR & REKAP ---------- */
 function CC(){ return DB.set.cetak; }
+function TP(){ const c=CC(); if(!c.tampil) c.tampil=JSON.parse(JSON.stringify(seed().set.cetak.tampil)); return c.tampil; }
+function KR(){ const c=CC(); if(!c.kolR) c.kolR=JSON.parse(JSON.stringify(seed().set.cetak.kolR)); return c.kolR; }
+function judulCetak(t){ return TP().judul?`<div class="ptitle">${esc(t)}</div>`:''; }
+function subCetak(isi){ return TP().sub&&isi?`<div class="psub">${isi}</div>`:''; }
+function metaCetak(A){ A=A.filter(Boolean); return TP().meta&&A.length?`<div class="pmeta">${A.map(x=>`<span>${x}</span>`).join('')}</div>`:''; }
+function catatanCetak(){ const t=String(CC().catatan||'').trim(); return t?`<div class="pcat">${esc(t).replace(/\n/g,'<br>')}</div>`:''; }
+/* tabel rinci per unit — kolomnya mengikuti pilihan "Kolom tabel rinci" */
+const KOLOMR=[['no','No',5,'c'],['kode','Kode Barang',22,''],['nama','Nama Barang',0,''],['kond','Kondisi',9,'c'],
+  ['thn','Perolehan',11,'c'],['dana','Dana',7,'c'],['harga','Harga',13,'r']];
+function kolomRinci(){ const k=KR(); const A=KOLOMR.filter(x=>k[x[0]]); return A.length?A:[KOLOMR[2]]; }
+function kepalaRinci(){
+  const A=kolomRinci(), tetap=A.reduce((t,x)=>t+x[2],0), fleks=A.filter(x=>!x[2]).length;
+  const sisa=Math.max(12,100-tetap);
+  return `<thead><tr>${A.map(x=>`<th class="${x[3]}" style="width:${(x[2]||sisa/(fleks||1)).toFixed(1)}%">${x[1]}</th>`).join('')}</tr></thead>`;
+}
+function barisRinci(a,n){
+  const k=KR();
+  const sel={no:`<td class="c">${n}</td>`, kode:`<td class="mono">${esc(a.kode)}</td>`,
+    nama:`<td>${esc(a.nama)}${k.merk&&a.merk?' <span style="color:#4A5570">('+esc(a.merk)+')</span>':''}${k.ket&&a.ket?'<br><span style="font-size:.88em;color:#4A5570">'+esc(a.ket)+'</span>':''}</td>`,
+    kond:`<td class="c">${(KOND[a.kond]||KOND.B)[0].replace('Rusak ','R. ')}</td>`,
+    thn:`<td class="c">${fdate(a.tgl)}</td>`, dana:`<td class="c">${esc(a.dana)}</td>`,
+    harga:`<td class="r">${a.harga?rp(a.harga):'–'}</td>`};
+  return `<tr>${kolomRinci().map(x=>sel[x[0]]).join('')}</tr>`;
+}
+function jumlahRinci(label,nilai,kelas){
+  const A=kolomRinci(), ada=A.some(x=>x[0]==='harga');
+  return ada&&A.length>1
+    ? `<tr class="${kelas}"><td colspan="${A.length-1}" class="r">${esc(label)}</td><td class="r">${rp(nilai)}</td></tr>`
+    : `<tr class="${kelas}"><td colspan="${A.length}" class="r">${esc(label)}${ada?' · '+rp(nilai):''}</td></tr>`;
+}
 const KERTAS={A3:[297,420],A4:[210,297],A5:[148,210],F4:[215,330],LTR:[216,279],LGL:[216,356]};
 const KERTASNAMA={A3:'A3 (297×420)',A4:'A4 (210×297)',A5:'A5 (148×210)',F4:'F4 / Folio (215×330)',LTR:'Letter (216×279)',LGL:'Legal (216×356)'};
 function ukuranKertas(h){
@@ -2831,6 +2903,7 @@ function pasangGayaHalaman(h){
 }
 function lebarIsi(){ const c=CC(); return ukuranKertas()[0]-c.margin*2; }
 function kop(){
+  if(!TP().kop) return '';
   const c=CC(), t=c.kopTebal||0.9;
   const lk=gambarAman(c.kopKiri), lkn=gambarAman(c.kopKanan);
   const tl=c.kopLogo;
@@ -2875,8 +2948,9 @@ function ringkasKotak(rows){
   const C={}; rows.forEach(a=>{ const t=type(a.tipe); const k=(t&&t.kat)||'Lainnya'; C[k]=(C[k]||0)+1; });
   const nilai=rows.reduce((t,a)=>t+(Number(a.harga)||0),0);
   const baris=(o,f)=>Object.keys(o).sort().map(k=>`<tr><td>${esc(f?f(k):k)}</td><td class="r">${o[k].n!==undefined?o[k].n:o[k]}</td>${o[k].v!==undefined?`<td class="r">${rp(o[k].v)}</td>`:''}</tr>`).join('');
+  const tp=TP(); if(!tp.rkKond&&!tp.rkDana&&!tp.rkKat) return '';
   return `<div class="pbox">
-    <div class="pb">
+    ${tp.rkKond?`<div class="pb">
       <h4>Kondisi Barang</h4>
       <table class="pmini"><tbody>
         <tr><td>Baik</td><td class="r">${K.B}</td></tr>
@@ -2884,17 +2958,17 @@ function ringkasKotak(rows){
         <tr><td>Rusak berat</td><td class="r">${K.RB}</td></tr>
         <tr class="tot"><td>Jumlah unit</td><td class="r">${rows.length}</td></tr>
       </tbody></table>
-    </div>
-    <div class="pb">
+    </div>`:''}
+    ${tp.rkDana?`<div class="pb">
       <h4>Sumber Dana</h4>
       <table class="pmini"><tbody>${baris(D,k=>fundName(k))}
         <tr class="tot"><td>Total nilai</td><td class="r">—</td><td class="r">${rp(nilai)}</td></tr>
       </tbody></table>
-    </div>
-    <div class="pb">
+    </div>`:''}
+    ${tp.rkKat?`<div class="pb">
       <h4>Kategori</h4>
       <table class="pmini"><tbody>${baris(C)}</tbody></table>
-    </div>
+    </div>`:''}
   </div>`;
 }
 function tabelGrup(rows,tampilRuang){
@@ -2906,9 +2980,9 @@ function tabelGrup(rows,tampilRuang){
       const gs=byR[rk];
       const sn=gs.reduce((t,g)=>t+g.n,0), sv=gs.reduce((t,g)=>t+g.nilai,0); tot+=sv;
       const sk={B:0,RR:0,RB:0}; gs.forEach(g=>{sk.B+=g.B;sk.RR+=g.RR;sk.RB+=g.RB});
-      html+=`<tr class="grp"><td colspan="${jmlKolom()}">${esc(roomName(rk))} — ${sn} unit</td></tr>`;
+      if(TP().grup) html+=`<tr class="grp"><td colspan="${jmlKolom()}">${esc(roomName(rk))} — ${sn} unit</td></tr>`;
       gs.forEach(g=>{ n++; html+=barisGrup(g,n); });
-      html+=barisJumlah('Jumlah '+roomName(rk),sn,sk,sv,'sub');
+      if(TP().subtotal) html+=barisJumlah('Jumlah '+roomName(rk),sn,sk,sv,'sub');
     });
   } else {
     G.forEach(g=>{ n++; tot+=g.nilai; html+=barisGrup(g,n); });
@@ -2967,33 +3041,26 @@ function printKIR(kode,rinci){
   const tot=items.reduce((t,a)=>t+(Number(a.harga)||0),0);
   const K={B:0,RR:0,RB:0}; items.forEach(a=>K[a.kond||'B']=(K[a.kond||'B']||0)+1);
   let isi;
-  if(rinci){
-    isi=`<table class="ptable"><thead><tr><th class="c" style="width:5%">No</th><th style="width:24%">Kode Barang</th>
-      <th>Nama Barang / Merk</th><th class="c" style="width:10%">Kondisi</th><th class="c" style="width:12%">Perolehan</th>
-      <th class="c" style="width:8%">Dana</th><th class="r" style="width:13%">Harga</th></tr></thead><tbody>
-      ${items.map((a,i)=>`<tr><td class="c">${i+1}</td><td class="mono">${esc(a.kode)}</td>
-        <td>${esc(a.nama)}${a.merk?' <span style="color:#4A5570">('+esc(a.merk)+')</span>':''}${a.ket?'<br><span style="font-size:9px;color:#4A5570">'+esc(a.ket)+'</span>':''}</td>
-        <td class="c">${(KOND[a.kond]||KOND.B)[0].replace('Rusak ','R. ')}</td>
-        <td class="c">${fdate(a.tgl)}</td><td class="c">${esc(a.dana)}</td>
-        <td class="r">${a.harga?rp(a.harga):'–'}</td></tr>`).join('')}
-      <tr class="sub"><td colspan="6" class="r">Jumlah ${items.length} unit</td><td class="r">${rp(tot)}</td></tr>
+  const susun=()=>{
+    if(rinci) return `<table class="ptable">${kepalaRinci()}<tbody>
+      ${items.map((a,i)=>barisRinci(a,i+1)).join('')}
+      ${TP().total?jumlahRinci('Jumlah '+items.length+' unit',tot,'sub'):''}
     </tbody></table>`;
-  } else {
     const T=tabelGrup(items,false);
-    isi=`<table class="ptable">${kepalaTabel()}<tbody>${T.html}
-      ${barisJumlah('JUMLAH',items.length,K,tot,'tot')}</tbody></table>`;
-  }
-  const bangun=()=>`<div class="psheet${CC().zebra?' zebra':''}">${kop()}
-    <div class="ptitle">Kartu Inventaris Ruangan</div>
-    <div class="psub">${esc(r.nama)} · Kode ruang <b class="mono">${esc(r.kode)}</b>${r.pj?' · Penanggung jawab: '+esc(r.pj):''}${r.siswa?' · '+r.siswa+' siswa':''}</div>
-    <div class="pmeta">
-      <span>Jumlah unit: <b>${items.length}</b></span>
-      <span>Baik: <b>${K.B}</b> · Rusak ringan: <b>${K.RR}</b> · Rusak berat: <b>${K.RB}</b></span>
-      <span>Nilai: <b>${rp(tot)}</b></span>
-      <span>Dicetak: <b>${fdate(new Date().toISOString().slice(0,10),true)}</b></span>
-    </div>
-    ${isi}
-    ${ttd('Penanggung Jawab Ruangan',r.pj||'','')}</div>`;
+    return `<table class="ptable">${kepalaTabel()}<tbody>${T.html}
+      ${TP().total?barisJumlah('JUMLAH',items.length,K,tot,'tot'):''}</tbody></table>`;
+  };
+  const bangun=()=>{ const tp=TP();
+    return `<div class="psheet${CC().zebra?' zebra':''}">${kop()}
+    ${judulCetak(CC().judulKIR||'Kartu Inventaris Ruangan')}
+    ${subCetak([esc(r.nama), tp.sKode?'Kode ruang <b class="mono">'+esc(r.kode)+'</b>':'', tp.sPj&&r.pj?'Penanggung jawab: '+esc(r.pj):'', tp.sSiswa&&r.siswa?r.siswa+' siswa':''].filter(Boolean).join(' · '))}
+    ${metaCetak([tp.mUnit&&`Jumlah unit: <b>${items.length}</b>`,
+      tp.mKond&&`Baik: <b>${K.B}</b> · Rusak ringan: <b>${K.RR}</b> · Rusak berat: <b>${K.RB}</b>`,
+      tp.mNilai&&`Nilai: <b>${rp(tot)}</b>`,
+      tp.mTgl&&`Dicetak: <b>${fdate(new Date().toISOString().slice(0,10),true)}</b>`])}
+    ${susun()}
+    ${catatanCetak()}
+    ${ttd('Penanggung Jawab Ruangan',r.pj||'','')}</div>`; };
   openPrint('KIR — '+r.nama, bangun(), null, bangun);
 }
 
@@ -3007,40 +3074,34 @@ function printRekap(rinci){
   if(rinci){
     const byRoom={}; A.forEach(a=>{ (byRoom[a.ruang]=byRoom[a.ruang]||[]).push(a); });
     let n=0, html='';
-    Object.keys(byRoom).sort().forEach(k=>{
+    Object.keys(byRoom).sort((a,b)=>iR(a)-iR(b)).forEach(k=>{
       const its=byRoom[k].sort((a,b)=>(a.kode||'').localeCompare(b.kode||''));
       const sv=its.reduce((t,a)=>t+(Number(a.harga)||0),0);
-      html+=`<tr class="grp"><td colspan="7">${esc(roomName(k))} — ${its.length} unit</td></tr>`;
-      html+=its.map(a=>{ n++; return `<tr><td class="c">${n}</td><td class="mono">${esc(a.kode)}</td>
-        <td>${esc(a.nama)}${a.merk?' ('+esc(a.merk)+')':''}</td>
-        <td class="c">${(KOND[a.kond]||KOND.B)[0].replace('Rusak ','R. ')}</td>
-        <td class="c">${fdate(a.tgl)}</td><td class="c">${esc(a.dana)}</td>
-        <td class="r">${a.harga?rp(a.harga):'–'}</td></tr>`}).join('');
-      html+=`<tr class="sub"><td colspan="6" class="r">Jumlah ${esc(roomName(k))}</td><td class="r">${rp(sv)}</td></tr>`;
+      if(TP().grup) html+=`<tr class="grp"><td colspan="${kolomRinci().length}">${esc(roomName(k))} — ${its.length} unit</td></tr>`;
+      html+=its.map(a=>{ n++; return barisRinci(a,n); }).join('');
+      if(TP().subtotal) html+=jumlahRinci('Jumlah '+roomName(k),sv,'sub');
     });
-    isi=`<table class="ptable"><thead><tr><th class="c" style="width:5%">No</th><th style="width:22%">Kode Barang</th>
-      <th>Nama Barang</th><th class="c" style="width:9%">Kondisi</th><th class="c" style="width:11%">Perolehan</th>
-      <th class="c" style="width:7%">Dana</th><th class="r" style="width:13%">Harga</th></tr></thead>
-      <tbody>${html}<tr class="tot"><td colspan="6" class="r">TOTAL NILAI ASET</td><td class="r">${rp(nilai)}</td></tr></tbody></table>`;
+    isi=`<table class="ptable">${kepalaRinci()}
+      <tbody>${html}${TP().total?jumlahRinci('TOTAL NILAI ASET',nilai,'tot'):''}</tbody></table>`;
   } else {
     const T=tabelGrup(A,true);
     const K={B:0,RR:0,RB:0}; A.forEach(a=>K[a.kond||'B']=(K[a.kond||'B']||0)+1);
     isi=`<table class="ptable">${kepalaTabel()}<tbody>${T.html}
-      ${barisJumlah('TOTAL SELURUH ASET',A.length,K,nilai,'tot')}</tbody></table>`;
+      ${TP().total?barisJumlah('TOTAL SELURUH ASET',A.length,K,nilai,'tot'):''}</tbody></table>`;
   }
   return isi; };
-  const bangun=()=>`<div class="psheet${CC().zebra?' zebra':''}">${kop()}
-    <div class="ptitle">${esc(CC().judul||'Daftar Inventaris Sarana dan Prasarana')}</div>
-    <div class="psub">Keadaan per ${tgl}${rinci?' · rincian tiap unit':''}</div>
-    <div class="pmeta">
-      <span>Jumlah unit: <b>${A.length}</b></span>
-      <span>Jenis barang: <b>${new Set(A.map(a=>a.tipe)).size}</b></span>
-      <span>Ruangan terisi: <b>${new Set(A.map(a=>a.ruang)).size}</b> dari ${DB.rooms.length}</span>
-      <span>Total nilai: <b>${rp(nilai)}</b></span>
-    </div>
+  const bangun=()=>{ const tp=TP();
+    return `<div class="psheet${CC().zebra?' zebra':''}">${kop()}
+    ${judulCetak(CC().judul||'Daftar Inventaris Sarana dan Prasarana')}
+    ${subCetak('Keadaan per '+tgl+(rinci?' · rincian tiap unit':''))}
+    ${metaCetak([tp.mUnit&&`Jumlah unit: <b>${A.length}</b>`,
+      tp.mJenis&&`Jenis barang: <b>${new Set(A.map(a=>a.tipe)).size}</b>`,
+      tp.mRuang&&`Ruangan terisi: <b>${new Set(A.map(a=>a.ruang)).size}</b> dari ${DB.rooms.length}`,
+      tp.mNilai&&`Total nilai: <b>${rp(nilai)}</b>`])}
     ${(rinci||!CC().ringkasan)?'':ringkasKotak(A)}
     ${susunIsi()}
-    ${ttd()}</div>`;
+    ${catatanCetak()}
+    ${ttd()}</div>`; };
   openPrint(rinci?'Rekap rinci per unit':'Rekap inventaris', bangun(), null, bangun);
 }
 
